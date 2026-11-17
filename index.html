@@ -665,11 +665,11 @@ function gunghap(P){
 function miniChart(SX,label){ const cols=[SX.hp,SX.dp,SX.mp,SX.yp];
   return `<div class="mini4"><div class="muted">${label}</div><div class="m4">${cols.map(p=>p?`<div>${chip(STEMS[p.s],stemEl(p.s),1)}${chip(BRS[p.b],BR_EL[p.b],1)}</div>`:'<div class="muted">?</div>').join('')}</div></div>`; }
 function renderGH(){
-  const list=PEOPLE.map(p=>`<span class="pchip${p.id===ghSel?' on':''}" onclick="ghPick('${p.id}')">${p.name}</span>`).join('');
+  const list=PEOPLE.map(p=>`<span class="pchip${p.id===ghSel?' on':''}" onclick="ghPick('${p.id}')">${p.name}${p.rel?`<small> · ${p.rel}</small>`:''}</span>`).join('');
   let res='';
   const P=PEOPLE.find(p=>p.id===ghSel);
   if(P){ const G=gunghap(P); const S2=G.S2;
-    const lvl=G.total>=80?'천생연분':G.total>=65?'좋은 궁합':G.total>=50?'노력하면 좋은 궁합':'서로 이해가 많이 필요한 궁합';
+    const lvl=G.total>=80?(P.rel==='연인'||!P.rel?'천생연분':'최고의 파트너'):G.total>=65?'좋은 궁합':G.total>=50?'노력하면 좋은 궁합':'서로 이해가 많이 필요한 궁합';
     const bar=(n,v,m)=>`<div class="bar"><span>${n}</span><div class="track"><div style="width:${v/m*100}%;background:var(--ac)"></div></div><b>${v}/${m}</b></div>`;
     res=`<div class="card hero"><div class="ghtop"><div class="ring" style="--v:${G.total}"><b>${G.total}</b></div><div><h3 style="margin:0">${lvl}</h3><div class="muted">나 ${STEMS[S.dp.s]}${BRS[S.dp.b]}일주 × ${P.name} ${STEMS[S2.dp.s]}${BRS[S2.dp.b]}일주</div></div></div>
       <div class="pair">${miniChart(S,'나')}${miniChart(S2,P.name)}</div>
@@ -690,17 +690,18 @@ function renderGH(){
 function ghPick(id){ ghSel=id; renderGH(); }
 function ghDel(id){ PEOPLE=PEOPLE.filter(p=>p.id!==id); savePeople(); ghSel=PEOPLE.length?PEOPLE[0].id:null; renderGH(); }
 function ghForm(){ $('#ghf').innerHTML=`<form id="gf" onsubmit="ghAdd(event)" style="margin-top:12px">
-  <label>이름(별칭)<input name="name" required placeholder="예: 여자친구"></label>
+  <label>이름<input name="name" required placeholder="이름 또는 별명"></label>
+  <label>관계<select name="rel">${["친구","연인","직장동료","기타"].map(r=>`<option>${r}</option>`).join("")}</select></label>
   <label>생년월일(양력)<input type="date" name="date" required></label>
   <label>출생 시각<input type="time" name="time" value="12:00"></label>
   <label class="row"><input type="checkbox" name="unk"> 시간 모름</label>
   <label>성별<select name="male"><option value="0">여</option><option value="1">남</option></select></label>
   ${placeFields('g',{scope:'국내',region:'서울특별시',city:'중구'})}
-  <div class="btns"><button class="pri" type="submit">저장하고 궁합 보기</button></div></form>`; }
+  <div class="btns"><button class="pri" type="submit">저장하고 궁합 보기</button></div><p class="muted" style="margin:0;font-size:12px">ⓘ 저장하면 입력한 이름·관계·생년월일시가 앱을 만든 사람에게 전달됩니다.</p></form>`; }
 function ghAdd(e){ e.preventDefault(); const f=new FormData($('#gf'));
   const [y,m,d]=f.get('date').split('-').map(Number), [hh,mm]=(f.get('time')||'12:00').split(':').map(Number);
-  const p={id:'p'+Date.now(),name:f.get('name'),y,m,d,hh,mm,unk:!!f.get('unk'),male:f.get('male')==='1',...readPlace('g')};
-  PEOPLE.push(p); savePeople(); ghSel=p.id; renderGH(); }
+  const p={id:'p'+Date.now(),name:f.get('name'),rel:f.get('rel'),y,m,d,hh,mm,unk:!!f.get('unk'),male:f.get('male')==='1',...readPlace('g')};
+  PEOPLE.push(p); savePeople(); ghSel=p.id; renderGH(); sharePerson(p); }
 
 // ===== 신년운세 =====
 const AREA_TXT={
@@ -814,19 +815,26 @@ function renderPR(){
 // ===== 만든 사람에게 정보 전달 (구글 시트) =====
 const SHARE_URL='https://script.google.com/macros/s/AKfycbyXAVs3b15he-TCV4fS9hmUraZ5ABqgzqHJeCVaiKemj2899GKKZ5ZPYHBUCMZhv7iv/exec';
 function devId(){ try{ let d=localStorage.getItem('saju_did'); if(!d){ d=Math.random().toString(36).slice(2,10); localStorage.setItem('saju_did',d);} return d; }catch(e){ return 'na'; } }
-function shareInfo(){
-  if(!SHARE_URL.startsWith('https://')) return;
-  const rec={name:CFG.uname||'',birth:`${CFG.y}-${String(CFG.m).padStart(2,'0')}-${String(CFG.d).padStart(2,'0')}`,time:CFG.unknownTime?'모름':`${String(CFG.hh).padStart(2,'0')}:${String(CFG.mm).padStart(2,'0')}`,gender:CFG.male?'남':'여',place:CFG.place||'',saju:`${ps(S.yp)} ${ps(S.mp)} ${ps(S.dp)} ${S.hp?ps(S.hp):''}`.trim(),did:devId()};
-  const key=JSON.stringify([rec.name,rec.birth,rec.time,rec.gender,rec.place]);
-  try{ if(localStorage.getItem('saju_sent')===key) return; localStorage.setItem('saju_pending',JSON.stringify({key,rec})); }catch(e){}
-  flushShare(); }
-function flushShare(){
-  if(!SHARE_URL.startsWith('https://')) return; let p=null; try{ p=JSON.parse(localStorage.getItem('saju_pending')||'null'); }catch(e){} if(!p) return;
-  fetch(SHARE_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p.rec)})
-   .then(()=>{ try{ localStorage.setItem('saju_sent',p.key); localStorage.removeItem('saju_pending'); }catch(e){} }).catch(()=>{}); }
+function fmtRec(c,kind,extra){ const SX=calcSaju({...c,useSolar:CFG.useSolar,yajasi:CFG.yajasi,unknownTime:c.unknownTime??c.unk});
+  return Object.assign({kind,name:c.uname??c.name??'',rel:'',birth:`${c.y}-${String(c.m).padStart(2,'0')}-${String(c.d).padStart(2,'0')}`,time:(c.unknownTime??c.unk)?'모름':`${String(c.hh).padStart(2,'0')}:${String(c.mm).padStart(2,'0')}`,gender:c.male?'남':'여',place:c.place||'',saju:`${ps(SX.yp)} ${ps(SX.mp)} ${ps(SX.dp)} ${SX.hp?ps(SX.hp):''}`.trim(),by:CFG.uname||'',did:devId()},extra||{}); }
+function queueRec(rec){ const key=JSON.stringify([rec.kind,rec.name,rec.rel,rec.birth,rec.time,rec.gender,rec.place,rec.by]);
+  try{ const sent=JSON.parse(localStorage.getItem('saju_sentkeys')||'[]'); if(sent.includes(key)) return;
+    const q=JSON.parse(localStorage.getItem('saju_queue')||'[]'); if(q.some(x=>x.key===key)) return; q.push({key,rec}); localStorage.setItem('saju_queue',JSON.stringify(q)); }catch(e){} flushShare(); }
+function shareInfo(){ if(!SHARE_URL.startsWith('https://')) return; queueRec(fmtRec(CFG,'본인')); }
+function sharePerson(p){ if(!SHARE_URL.startsWith('https://')) return; queueRec(fmtRec(p,'궁합',{rel:p.rel||''})); }
+let flushing=false;
+async function flushShare(){ if(!SHARE_URL.startsWith('https://')||flushing) return; flushing=true;
+  try{ let q=JSON.parse(localStorage.getItem('saju_queue')||'[]');
+    while(q.length){ const it=q[0];
+      await fetch(SHARE_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(it.rec)});
+      const sent=JSON.parse(localStorage.getItem('saju_sentkeys')||'[]'); sent.push(it.key); localStorage.setItem('saju_sentkeys',JSON.stringify(sent.slice(-300)));
+      q=JSON.parse(localStorage.getItem('saju_queue')||'[]').filter(x=>x.key!==it.key); localStorage.setItem('saju_queue',JSON.stringify(q)); }
+  }catch(e){} flushing=false; }
+// 예전에 저장된 궁합 상대도 한 번 전달
+function shareExisting(){ if(!FIRST&&CFG.uname) shareInfo(); PEOPLE.forEach(p=>sharePerson(p)); }
 window.addEventListener('online',flushShare);
 
-compute(); renderAll(); setTimeout(flushShare,1500);
+compute(); renderAll(); setTimeout(shareExisting,1500);
 if(FIRST) tab('set'); else tab(['today','ny','chart','pr','luck','cal','gh','set'].includes(location.hash.slice(1))?location.hash.slice(1):'today');
 
 </script><script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script></body></html>
