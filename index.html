@@ -70,7 +70,7 @@ input,select{background:#24202e;color:var(--tx);border:1px solid var(--line);bor
 .pair{display:flex;gap:10px;margin-bottom:10px}.mini4{flex:1;background:#24202e;border-radius:10px;padding:8px;text-align:center}.m4{display:flex;justify-content:center;gap:2px}.m4>div{display:flex;flex-direction:column}
 .del{background:none;border:1px solid #5a3036;color:#eb7b7b;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:inherit}
 .bar>span{width:auto;min-width:52px}
-header{padding-top:calc(20px + env(safe-area-inset-top))}main{padding-bottom:calc(60px + env(safe-area-inset-bottom))}.sheet{padding-bottom:calc(32px + env(safe-area-inset-bottom))}html,body{overscroll-behavior-y:none}</style></head><body>
+header{padding-top:calc(20px + env(safe-area-inset-top))}main{padding-bottom:calc(60px + env(safe-area-inset-bottom))}.sheet{padding-bottom:calc(32px + env(safe-area-inset-bottom))}html,body{overscroll-behavior-y:none}.pfrow{display:flex;gap:6px}.pfrow>select,.pfrow>label{flex:1;min-width:0}.pf{display:grid;gap:6px}.pf>label:first-child{font-size:13px;color:var(--mu)}</style></head><body>
 <header><h1>命 나의 사주 운세</h1><div id="me"></div></header>
 <nav><div><button data-t="today" onclick="tab('today')">오늘</button><button data-t="chart" onclick="tab('chart')">원국</button><button data-t="luck" onclick="tab('luck')">대운·세운</button><button data-t="cal" onclick="tab('cal')">달력</button><button data-t="gh" onclick="tab('gh')">궁합</button><button data-t="set" onclick="tab('set')">설정</button></div></nav>
 <main><section id="today"></section><section id="chart" hidden></section><section id="luck" hidden></section><section id="cal" hidden></section><section id="gh" hidden></section><section id="set" hidden></section></main>
@@ -123,7 +123,7 @@ function ipchunJD(y){ return termJD(315, jdUT(y,2,4,0)); }
 
 function calcSaju(cfg){
   const {y,m,d,hh,mm,male,lon,useSolar,yajasi,unknownTime}=cfg;
-  const off=krOffset(y,m,d);
+  const off=(cfg.tz!=null&&cfg.tz!=='')?(+cfg.tz+(cfg.dst?1:0)):krOffset(y,m,d);
   const jd=jdUT(y,m,d,hh+mm/60-off);
   // 년주
   let sy=y; if(jd<ipchunJD(y)) sy=y-1;
@@ -261,9 +261,9 @@ const EL_LUCK={0:['초록·청록','동쪽','3, 8','신맛, 채소'],1:['빨강�
 const REL_TXT={'육합':'합 — 끌어당김, 협력, 인연','충':'충 — 부딪힘, 변화, 이동','형':'형 — 마찰, 조정, 수술·법적 문제 주의','해':'해 — 서운함, 오해','자형':'자형 — 스스로를 괴롭히는 고민','반합':'반합 — 기운이 모여 힘을 냄'};
 
 // ===== 상태 =====
-const DEFAULT={y:1990,m:1,d:1,hh:12,mm:0,male:true,place:'서울',lon:126.98,useSolar:true,yajasi:'0',unknownTime:false,yongOverride:'auto'};
+const DEFAULT={y:1990,m:1,d:1,hh:12,mm:0,male:true,scope:'국내',region:'서울특별시',city:'중구',place:'서울 중구',lon:127.00,tz:null,dst:false,useSolar:true,yajasi:'0',unknownTime:false,yongOverride:'auto'};
 let CFG=Object.assign({},DEFAULT); let FIRST=true;
-try{ const s=localStorage.getItem('saju_cfg'); if(s){ CFG=Object.assign({},DEFAULT,JSON.parse(s)); FIRST=false; } }catch(e){}
+try{ const s=localStorage.getItem('saju_cfg'); if(s){ const sv=JSON.parse(s); CFG=Object.assign({},DEFAULT,sv); if(!sv.scope){CFG.scope=CFG.region=CFG.city=null;} FIRST=false; } }catch(e){}
 let viewDate=new Date(); let calMonth=new Date(viewDate.getFullYear(),viewDate.getMonth(),1);
 let S,Y,SS;
 const $=q=>document.querySelector(q);
@@ -409,24 +409,87 @@ function shiftMonth(k){ calMonth=new Date(calMonth.getFullYear(),calMonth.getMon
 function pickDay(y,m,d){ viewDate=new Date(y,m,d); tab('today'); }
 
 // ===== 설정 =====
-const PLACES={'서울':126.98,'인천':126.70,'수원':127.01,'춘천':127.73,'강릉':128.88,'대전':127.38,'청주':127.49,'전주':127.15,'광주':126.85,'전남 장흥':126.91,'목포':126.39,'여수':127.66,'대구':128.60,'부산':129.08,'울산':129.31,'포항':129.34,'창원':128.68,'제주':126.53};
+// ===== 출생지 데이터 (경도) =====
+const KR_PLACES={
+'서울특별시':'종로구 126.98,중구 127.00,용산구 126.99,성동구 127.04,광진구 127.08,동대문구 127.04,중랑구 127.09,성북구 127.02,강북구 127.03,도봉구 127.05,노원구 127.06,은평구 126.93,서대문구 126.94,마포구 126.90,양천구 126.87,강서구 126.85,구로구 126.89,금천구 126.90,영등포구 126.90,동작구 126.94,관악구 126.95,서초구 127.03,강남구 127.05,송파구 127.11,강동구 127.12',
+'부산광역시':'중구 129.03,서구 129.02,동구 129.04,영도구 129.07,부산진구 129.05,동래구 129.09,남구 129.08,북구 129.01,해운대구 129.16,사하구 128.97,금정구 129.09,강서구 128.98,연제구 129.08,수영구 129.11,사상구 128.99,기장군 129.22',
+'대구광역시':'중구 128.61,동구 128.64,서구 128.56,남구 128.60,북구 128.58,수성구 128.63,달서구 128.53,달성군 128.43,군위군 128.57',
+'인천광역시':'중구 126.62,동구 126.64,미추홀구 126.65,연수구 126.68,남동구 126.73,부평구 126.72,계양구 126.74,서구 126.68,강화군 126.49,옹진군 126.64',
+'광주광역시':'동구 126.92,서구 126.89,남구 126.90,북구 126.91,광산구 126.79',
+'대전광역시':'동구 127.45,중구 127.42,서구 127.38,유성구 127.36,대덕구 127.42',
+'울산광역시':'중구 129.33,남구 129.33,동구 129.42,북구 129.36,울주군 129.24',
+'세종특별자치시':'세종시 127.29',
+'경기도':'수원시 127.01,성남시 127.13,고양시 126.83,용인시 127.18,부천시 126.77,안산시 126.83,안양시 126.95,남양주시 127.22,화성시 126.83,평택시 127.11,의정부시 127.05,시흥시 126.80,파주시 126.78,김포시 126.72,광명시 126.86,광주시 127.26,군포시 126.94,하남시 127.21,오산시 127.08,이천시 127.44,안성시 127.28,의왕시 126.97,양주시 127.05,구리시 127.13,포천시 127.20,여주시 127.64,동두천시 127.06,과천시 126.99,가평군 127.51,양평군 127.49,연천군 127.07',
+'강원특별자치도':'춘천시 127.73,원주시 127.92,강릉시 128.88,동해시 129.11,태백시 128.99,속초시 128.59,삼척시 129.17,홍천군 127.89,횡성군 127.98,영월군 128.46,평창군 128.39,정선군 128.66,철원군 127.31,화천군 127.71,양구군 127.99,인제군 128.17,고성군 128.47,양양군 128.62',
+'충청북도':'청주시 127.49,충주시 127.93,제천시 128.19,보은군 127.73,옥천군 127.57,영동군 127.78,증평군 127.58,진천군 127.44,괴산군 127.79,음성군 127.69,단양군 128.37',
+'충청남도':'천안시 127.11,공주시 127.12,보령시 126.61,아산시 127.00,서산시 126.45,논산시 127.10,계룡시 127.25,당진시 126.65,금산군 127.49,부여군 126.91,서천군 126.69,청양군 126.80,홍성군 126.66,예산군 126.85,태안군 126.30',
+'전북특별자치도':'전주시 127.15,군산시 126.74,익산시 126.96,정읍시 126.86,남원시 127.39,김제시 126.88,완주군 127.16,진안군 127.43,무주군 127.66,장수군 127.52,임실군 127.29,순창군 127.14,고창군 126.70,부안군 126.73',
+'전라남도':'목포시 126.39,여수시 127.66,순천시 127.49,나주시 126.71,광양시 127.70,담양군 126.99,곡성군 127.29,구례군 127.46,고흥군 127.28,보성군 127.08,화순군 126.99,장흥군 126.91,강진군 126.77,해남군 126.60,영암군 126.70,무안군 126.48,함평군 126.52,영광군 126.51,장성군 126.78,완도군 126.75,진도군 126.26,신안군 126.35',
+'경상북도':'포항시 129.34,경주시 129.22,김천시 128.11,안동시 128.73,구미시 128.34,영주시 128.62,영천시 128.94,상주시 128.16,문경시 128.19,경산시 128.74,의성군 128.70,청송군 129.06,영양군 129.11,영덕군 129.37,청도군 128.73,고령군 128.26,성주군 128.28,칠곡군 128.40,예천군 128.45,봉화군 128.73,울진군 129.40,울릉군 130.91',
+'경상남도':'창원시 128.68,진주시 128.11,통영시 128.43,사천시 128.06,김해시 128.89,밀양시 128.75,거제시 128.62,양산시 129.04,의령군 128.26,함안군 128.41,창녕군 128.49,고성군 128.32,남해군 127.89,하동군 127.75,산청군 127.87,함양군 127.73,거창군 127.91,합천군 128.17',
+'제주특별자치도':'제주시 126.53,서귀포시 126.56'};
+// 해외: 도시 경도 표준시(UTC±)
+const OV_PLACES={
+'일본':'도쿄 139.69 9,오사카 135.50 9,후쿠오카 130.40 9,삿포로 141.35 9',
+'중국':'베이징 116.40 8,상하이 121.47 8,칭다오 120.38 8,선양 123.43 8,옌지 129.51 8,광저우 113.26 8',
+'대만·홍콩':'타이베이 121.56 8,홍콩 114.17 8',
+'미국':'뉴욕 -74.01 -5,워싱턴DC -77.04 -5,애틀랜타 -84.39 -5,시카고 -87.63 -6,댈러스 -96.80 -6,덴버 -104.99 -7,로스앤젤레스 -118.24 -8,샌프란시스코 -122.42 -8,시애틀 -122.33 -8,호놀룰루 -157.86 -10',
+'캐나다':'토론토 -79.38 -5,밴쿠버 -123.12 -8',
+'영국':'런던 -0.13 0',
+'유럽':'파리 2.35 1,베를린 13.40 1,프랑크푸르트 8.68 1,로마 12.50 1,마드리드 -3.70 1',
+'러시아':'모스크바 37.62 3,블라디보스토크 131.89 10',
+'호주·뉴질랜드':'시드니 151.21 10,멜버른 144.96 10,브리즈번 153.03 10,오클랜드 174.76 12',
+'동남아':'하노이 105.85 7,호치민 106.70 7,방콕 100.50 7,마닐라 120.98 8,싱가포르 103.82 8,쿠알라룸푸르 101.69 8,자카르타 106.85 7',
+'기타':'직접 입력 0 0'};
+const SIDO_SHORT={'서울특별시':'서울','부산광역시':'부산','대구광역시':'대구','인천광역시':'인천','광주광역시':'광주','대전광역시':'대전','울산광역시':'울산','세종특별자치시':'세종','경기도':'경기','강원특별자치도':'강원','충청북도':'충북','충청남도':'충남','전북특별자치도':'전북','전라남도':'전남','경상북도':'경북','경상남도':'경남','제주특별자치도':'제주'};
+function cityList(scope,region){ const src=scope==='해외'?OV_PLACES:KR_PLACES; return (src[region]||'').split(',').map(x=>{const a=x.trim().split(' ');return {name:a[0],lon:+a[1],tz:a.length>2?+a[2]:null};}); }
+// 옛 형식(place 문자열만 있는 설정) 보정
+function normPlace(c){ if(c.scope&&c.region&&c.city) return c;
+  const name=(c.place||'').split(' ').pop();
+  for(const r in KR_PLACES){ const hit=cityList('국내',r).find(x=>x.name===name||x.name.replace(/[시군구]$/,'')===name); if(hit && (!c.place.includes(' ')||c.place.startsWith(SIDO_SHORT[r]))) return {...c,scope:'국내',region:r,city:hit.name}; }
+  return {...c,scope:'국내',region:'서울특별시',city:'중구'}; }
+function placeFields(px,c){ c=normPlace(c);
+  const regions=Object.keys(c.scope==='해외'?OV_PLACES:KR_PLACES);
+  const cities=cityList(c.scope,c.region);
+  const custom=c.scope==='해외'&&c.region==='기타';
+  return `<div class="pf" id="${px}pf">
+   <label>출생지</label>
+   <div class="pfrow">
+    <select name="scope" onchange="pfChange('${px}','scope')">${['국내','해외'].map(o=>`<option ${o===c.scope?'selected':''}>${o}</option>`).join('')}</select>
+    <select name="region" onchange="pfChange('${px}','region')">${regions.map(o=>`<option ${o===c.region?'selected':''}>${o}</option>`).join('')}</select>
+    ${custom?'':`<select name="city">${cities.map(o=>`<option ${o.name===c.city?'selected':''}>${o.name}</option>`).join('')}</select>`}
+   </div>
+   ${custom?`<div class="pfrow"><label>경도(동경 +, 서경 −)<input name="clon" type="number" step="0.01" value="${c.lon??0}"></label><label>표준시 UTC±<input name="ctz" type="number" step="0.5" value="${c.tz??0}"></label></div>`:''}
+   ${c.scope==='해외'?`<label class="row"><input type="checkbox" name="dst" ${c.dst?'checked':''}> 출생 당시 서머타임(일광절약시간) 적용</label><p class="muted" style="margin:0">해외 출생은 그 시기 서머타임 여부를 직접 체크해 주세요. (미국·유럽·호주 등은 보통 여름철 적용)</p>`:''}
+  </div>`; }
+function pfChange(px,what){ const box=$('#'+px+'pf'), f=n=>box.querySelector(`[name=${n}]`);
+  const scope=f('scope').value; let region=what==='scope'?Object.keys(scope==='해외'?OV_PLACES:KR_PLACES)[0]:f('region').value;
+  const city=cityList(scope,region)[0].name;
+  box.outerHTML=placeFields(px,{scope,region,city,dst:false}); }
+function readPlace(px){ const box=$('#'+px+'pf'), f=n=>box.querySelector(`[name=${n}]`);
+  const scope=f('scope').value, region=f('region').value;
+  if(scope==='해외'&&region==='기타') return {scope,region,city:'직접 입력',place:`해외(경도 ${f('clon').value})`,lon:+f('clon').value,tz:+f('ctz').value,dst:f('dst').checked};
+  const c=cityList(scope,region).find(x=>x.name===f('city').value);
+  return scope==='국내'?{scope,region,city:c.name,place:`${SIDO_SHORT[region]} ${c.name}`,lon:c.lon,tz:null,dst:false}
+                      :{scope,region,city:c.name,place:`${region} ${c.name}`,lon:c.lon,tz:c.tz,dst:f('dst').checked}; }
+
 function renderSet(){
   $('#set').innerHTML=`${FIRST?'<div class="card hero"><h4>👋 처음 오셨네요</h4><p>생년월일·출생 시각·출생지를 입력하고 저장하면 이 기기에 기억돼서 다음부터 바로 내 운세가 나옵니다.</p></div>':''}<div class="card"><h4>내 정보</h4><form id="f" onsubmit="saveCfg(event)">
    <label>생년월일(양력)<input type="date" name="date" value="${CFG.y}-${String(CFG.m).padStart(2,'0')}-${String(CFG.d).padStart(2,'0')}"></label>
    <label>출생 시각<input type="time" name="time" value="${String(CFG.hh).padStart(2,'0')}:${String(CFG.mm).padStart(2,'0')}"></label>
    <label class="row"><input type="checkbox" name="unk" ${CFG.unknownTime?'checked':''}> 태어난 시간 모름</label>
    <label>성별<select name="male"><option value="1" ${CFG.male?'selected':''}>남</option><option value="0" ${!CFG.male?'selected':''}>여</option></select></label>
-   <label>출생지<select name="place">${Object.keys(PLACES).map(p=>`<option ${p===CFG.place?'selected':''}>${p}</option>`).join('')}</select></label>
+   ${placeFields('s',CFG)}
    <label class="row"><input type="checkbox" name="solar" ${CFG.useSolar?'checked':''}> 경도 기반 시간 보정(진태양시)</label>
    <label>자시 처리<select name="yaja"><option value="0" ${CFG.yajasi==='0'?'selected':''}>0시에 날짜 변경 (야자시 적용)</option><option value="23" ${CFG.yajasi==='23'?'selected':''}>23시에 날짜 변경</option></select></label>
    <label>용신<select name="yong"><option value="auto" ${CFG.yongOverride==="auto"?"selected":""}>정통 (조후 우선 → 억부)</option><option value="eokbu" ${CFG.yongOverride==="eokbu"?"selected":""}>억부법만</option>${EL_K.map((e,i)=>`<option value="${i}" ${String(CFG.yongOverride)===String(i)?'selected':''}>${e}(${EL_H[i]}) 직접 지정</option>`).join('')}</select></label>
    <div class="btns"><button type="submit" class="pri">저장하고 다시 계산</button><button type="button" onclick="resetCfg()">기본값</button></div></form></div>
-  <div class="card muted"><h4>계산 방식</h4><p>· 년·월주는 실제 절기(입춘·12절) 시각을 천문 계산해서 경계를 정합니다.<br>· 1954–61년 표준시 변경, 1948–60·1987–88년 서머타임을 자동 반영합니다.<br>· 용신은 정통 방식대로 겨울·여름 출생은 궁통보감식 조후용신을 먼저, 봄·가을 출생은 억부용신을 씁니다. 격국은 자평진전 방식(월지 지장간 중 천간 투출 우선)입니다.<br>· 운세 점수는 용신·희신(+), 기신·구신(−), 일지·월지 합충, 일간 합충을 합산한 참고 지표입니다.<br>· 설정은 이 브라우저에만 저장됩니다.</p></div>`;
+  <div class="card muted"><h4>계산 방식</h4><p>· 년·월주는 실제 절기(입춘·12절) 시각을 천문 계산해서 경계를 정합니다.<br>· 국내 출생은 시군구별 경도로 시간을 보정하고, 1954–61년 표준시 변경, 1948–60·1987–88년 서머타임을 자동 반영합니다. 해외 출생은 해당 도시의 표준시와 경도를 씁니다.<br>· 용신은 정통 방식대로 겨울·여름 출생은 궁통보감식 조후용신을 먼저, 봄·가을 출생은 억부용신을 씁니다. 격국은 자평진전 방식(월지 지장간 중 천간 투출 우선)입니다.<br>· 운세 점수는 용신·희신(+), 기신·구신(−), 일지·월지 합충, 일간 합충을 합산한 참고 지표입니다.<br>· 설정은 이 브라우저에만 저장됩니다.</p></div>`;
 }
 function saveCfg(e){ e.preventDefault(); const f=new FormData($('#f'));
   const [y,m,d]=f.get('date').split('-').map(Number), [hh,mm]=(f.get('time')||'12:00').split(':').map(Number);
-  const place=f.get('place');
-  CFG={y,m,d,hh,mm,male:f.get('male')==='1',place,lon:PLACES[place],useSolar:!!f.get('solar'),yajasi:f.get('yaja'),unknownTime:!!f.get('unk'),yongOverride:f.get('yong')};
+  const PL=readPlace('s');
+  CFG={y,m,d,hh,mm,male:f.get('male')==='1',...PL,useSolar:!!f.get('solar'),yajasi:f.get('yaja'),unknownTime:!!f.get('unk'),yongOverride:f.get('yong')};
   try{localStorage.setItem('saju_cfg',JSON.stringify(CFG));}catch(e){} FIRST=false;
   compute(); renderAll(); tab('chart'); }
 function resetCfg(){ CFG=Object.assign({},DEFAULT); try{localStorage.removeItem('saju_cfg');}catch(e){} compute(); renderAll(); }
@@ -573,7 +636,7 @@ function brScore(a,b,max){ const r=brRel(a,b); const lines=[];
   return {sc:Math.round(sc),lines}; }
 const GH_TG={'비견':'친구 같은 동반자. 대등하고 편하지만 서로 양보가 필요합니다.','겁재':'승부욕을 자극하는 상대. 열정적이지만 주도권 다툼 주의.','식신':'내가 챙겨주고 싶은 상대. 편안하고 즐거운 관계.','상관':'내가 표현하고 싶어지는 상대. 재밌지만 잔소리·간섭이 생기기 쉬움.','편재':'활동적이고 끌리는 상대. 설렘이 크지만 안정감은 노력 필요.','정재':'안정감을 주는 상대. 현실적으로 잘 맞고, 남성에게는 전통적 배우자성.','편관':'나를 긴장시키는 강한 상대. 끌림과 부담이 공존.','정관':'믿음직하고 나를 바로잡아 주는 상대. 여성에게는 전통적 배우자성.','편인':'생각이 통하는 독특한 상대. 정신적 교감, 다만 거리감이 생길 수 있음.','정인':'나를 품어주는 상대. 의지가 되고 배려받는 관계.'};
 function gunghap(P){
-  const S2=calcSaju({y:P.y,m:P.m,d:P.d,hh:P.hh,mm:P.mm,male:P.male,lon:PLACES[P.place]||127,useSolar:CFG.useSolar,yajasi:CFG.yajasi,unknownTime:P.unk});
+  const S2=calcSaju({y:P.y,m:P.m,d:P.d,hh:P.hh,mm:P.mm,male:P.male,lon:P.lon??127,tz:P.tz??null,dst:!!P.dst,useSolar:CFG.useSolar,yajasi:CFG.yajasi,unknownTime:P.unk});
   const Y2=yongsin(S2,'auto'); const a=S.dp.s,b=S2.dp.s; const L=[];
   // 1. 일간 (30)
   let s1, t1; const ea=stemEl(a), eb=stemEl(b);
@@ -623,11 +686,11 @@ function ghForm(){ $('#ghf').innerHTML=`<form id="gf" onsubmit="ghAdd(event)" st
   <label>출생 시각<input type="time" name="time" value="12:00"></label>
   <label class="row"><input type="checkbox" name="unk"> 시간 모름</label>
   <label>성별<select name="male"><option value="0">여</option><option value="1">남</option></select></label>
-  <label>출생지<select name="place">${Object.keys(PLACES).map(p=>`<option>${p}</option>`).join('')}</select></label>
+  ${placeFields('g',{scope:'국내',region:'서울특별시',city:'중구'})}
   <div class="btns"><button class="pri" type="submit">저장하고 궁합 보기</button></div></form>`; }
 function ghAdd(e){ e.preventDefault(); const f=new FormData($('#gf'));
   const [y,m,d]=f.get('date').split('-').map(Number), [hh,mm]=(f.get('time')||'12:00').split(':').map(Number);
-  const p={id:'p'+Date.now(),name:f.get('name'),y,m,d,hh,mm,unk:!!f.get('unk'),male:f.get('male')==='1',place:f.get('place')};
+  const p={id:'p'+Date.now(),name:f.get('name'),y,m,d,hh,mm,unk:!!f.get('unk'),male:f.get('male')==='1',...readPlace('g')};
   PEOPLE.push(p); savePeople(); ghSel=p.id; renderGH(); }
 
 compute(); renderAll();
