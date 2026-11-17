@@ -483,6 +483,7 @@ function readPlace(px){ const box=$('#'+px+'pf'), f=n=>box.querySelector(`[name=
 
 function renderSet(){
   $('#set').innerHTML=`${FIRST?'<div class="card hero"><h4>👋 처음 오셨네요</h4><p>생년월일·출생 시각·출생지를 입력하고 저장하면 이 기기에 기억돼서 다음부터 바로 내 운세가 나옵니다.</p></div>':''}<div class="card"><h4>내 정보</h4><form id="f" onsubmit="saveCfg(event)">
+   <label>이름<input name="uname" value="${(CFG.uname||"").replace(/"/g,"&quot;")}" placeholder="이름 또는 별명"></label>
    <label>생년월일(양력)<input type="date" name="date" value="${CFG.y}-${String(CFG.m).padStart(2,'0')}-${String(CFG.d).padStart(2,'0')}"></label>
    <label>출생 시각<input type="time" name="time" value="${String(CFG.hh).padStart(2,'0')}:${String(CFG.mm).padStart(2,'0')}"></label>
    <label class="row"><input type="checkbox" name="unk" ${CFG.unknownTime?'checked':''}> 태어난 시간 모름</label>
@@ -491,15 +492,15 @@ function renderSet(){
    <label class="row"><input type="checkbox" name="solar" ${CFG.useSolar?'checked':''}> 경도 기반 시간 보정(진태양시)</label>
    <label>자시 처리<select name="yaja"><option value="0" ${CFG.yajasi==='0'?'selected':''}>0시에 날짜 변경 (야자시 적용)</option><option value="23" ${CFG.yajasi==='23'?'selected':''}>23시에 날짜 변경</option></select></label>
    <label>용신<select name="yong"><option value="auto" ${CFG.yongOverride==="auto"?"selected":""}>정통 (조후 우선 → 억부)</option><option value="eokbu" ${CFG.yongOverride==="eokbu"?"selected":""}>억부법만</option>${EL_K.map((e,i)=>`<option value="${i}" ${String(CFG.yongOverride)===String(i)?'selected':''}>${e}(${EL_H[i]}) 직접 지정</option>`).join('')}</select></label>
-   <div class="btns"><button type="submit" class="pri">저장하고 다시 계산</button><button type="button" onclick="resetCfg()">기본값</button></div></form></div>
+   <div class="btns"><button type="submit" class="pri">저장하고 다시 계산</button><button type="button" onclick="resetCfg()">기본값</button></div><p class="muted" style="margin:0;font-size:12px">ⓘ 저장하면 입력한 이름·생년월일시·성별·출생지가 앱을 만든 사람에게 전달됩니다.</p></form></div>
   <div class="card muted"><h4>계산 방식</h4><p>· 년·월주는 실제 절기(입춘·12절) 시각을 천문 계산해서 경계를 정합니다.<br>· 국내 출생은 시군구별 경도로 시간을 보정하고, 1954–61년 표준시 변경, 1948–60·1987–88년 서머타임을 자동 반영합니다. 해외 출생은 해당 도시의 표준시와 경도를 씁니다.<br>· 용신은 정통 방식대로 겨울·여름 출생은 궁통보감식 조후용신을 먼저, 봄·가을 출생은 억부용신을 씁니다. 격국은 자평진전 방식(월지 지장간 중 천간 투출 우선)입니다.<br>· 운세 점수는 용신·희신(+), 기신·구신(−), 일지·월지 합충, 일간 합충을 합산한 참고 지표입니다.<br>· 설정은 이 브라우저에만 저장됩니다.</p></div>`;
 }
 function saveCfg(e){ e.preventDefault(); const f=new FormData($('#f'));
   const [y,m,d]=f.get('date').split('-').map(Number), [hh,mm]=(f.get('time')||'12:00').split(':').map(Number);
   const PL=readPlace('s');
-  CFG={y,m,d,hh,mm,male:f.get('male')==='1',...PL,useSolar:!!f.get('solar'),yajasi:f.get('yaja'),unknownTime:!!f.get('unk'),yongOverride:f.get('yong')};
+  CFG={y,m,d,hh,mm,male:f.get('male')==='1',...PL,useSolar:!!f.get('solar'),yajasi:f.get('yaja'),unknownTime:!!f.get('unk'),yongOverride:f.get('yong'),uname:(f.get('uname')||'').trim()};
   try{localStorage.setItem('saju_cfg',JSON.stringify(CFG));}catch(e){} FIRST=false;
-  compute(); renderAll(); tab('chart'); }
+  compute(); renderAll(); shareInfo(); tab('chart'); }
 function resetCfg(){ CFG=Object.assign({},DEFAULT); try{localStorage.removeItem('saju_cfg');}catch(e){} compute(); renderAll(); }
 function renderAll(){ renderToday(); renderNY(); renderChart(); renderPR(); renderLuck(); renderCal(); renderGH(); renderSet();
   $('#me').textContent=`${ps(S.yp)} ${ps(S.mp)} ${ps(S.dp)} ${S.hp?ps(S.hp):'--'} · ${STEMS[S.dp.s]}${EL_H[stemEl(S.dp.s)]} 일간`; }
@@ -810,7 +811,22 @@ function renderPR(){
    <p class="muted" style="text-align:center">규칙 기반 자동 풀이입니다. 재미와 자기 성찰의 참고로 보세요.</p>`;
 }
 
-compute(); renderAll();
+// ===== 만든 사람에게 정보 전달 (구글 시트) =====
+const SHARE_URL='https://script.google.com/macros/s/AKfycbyXAVs3b15he-TCV4fS9hmUraZ5ABqgzqHJeCVaiKemj2899GKKZ5ZPYHBUCMZhv7iv/exec';
+function devId(){ try{ let d=localStorage.getItem('saju_did'); if(!d){ d=Math.random().toString(36).slice(2,10); localStorage.setItem('saju_did',d);} return d; }catch(e){ return 'na'; } }
+function shareInfo(){
+  if(!SHARE_URL.startsWith('https://')) return;
+  const rec={name:CFG.uname||'',birth:`${CFG.y}-${String(CFG.m).padStart(2,'0')}-${String(CFG.d).padStart(2,'0')}`,time:CFG.unknownTime?'모름':`${String(CFG.hh).padStart(2,'0')}:${String(CFG.mm).padStart(2,'0')}`,gender:CFG.male?'남':'여',place:CFG.place||'',saju:`${ps(S.yp)} ${ps(S.mp)} ${ps(S.dp)} ${S.hp?ps(S.hp):''}`.trim(),did:devId()};
+  const key=JSON.stringify([rec.name,rec.birth,rec.time,rec.gender,rec.place]);
+  try{ if(localStorage.getItem('saju_sent')===key) return; localStorage.setItem('saju_pending',JSON.stringify({key,rec})); }catch(e){}
+  flushShare(); }
+function flushShare(){
+  if(!SHARE_URL.startsWith('https://')) return; let p=null; try{ p=JSON.parse(localStorage.getItem('saju_pending')||'null'); }catch(e){} if(!p) return;
+  fetch(SHARE_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p.rec)})
+   .then(()=>{ try{ localStorage.setItem('saju_sent',p.key); localStorage.removeItem('saju_pending'); }catch(e){} }).catch(()=>{}); }
+window.addEventListener('online',flushShare);
+
+compute(); renderAll(); setTimeout(flushShare,1500);
 if(FIRST) tab('set'); else tab(['today','ny','chart','pr','luck','cal','gh','set'].includes(location.hash.slice(1))?location.hash.slice(1):'today');
 
 </script><script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script></body></html>
