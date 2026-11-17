@@ -84,8 +84,13 @@ header{padding-top:calc(20px + env(safe-area-inset-top))}main{padding-bottom:cal
 .er .l,.er .r{height:10px;background:var(--sub2);border-radius:6px;overflow:hidden;display:flex}.er .l{justify-content:flex-end}.er .l div,.er .r div{height:100%;border-radius:6px}.er.lbl small{color:var(--mu);font-size:11px}
 .dbox.gd{background:var(--good)}.dbox.bd{background:var(--bad)}.dbox ul{margin:2px 0;padding-left:18px;font-size:13.5px}
 .relsel{padding:3px 8px;font-size:13px;border-radius:8px}
-td.nt{white-space:normal;font-size:12px}</style></head><body>
+td.nt{white-space:normal;font-size:12px}.who{max-width:760px;margin:0 auto;padding:0 16px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--mu)}.who select{padding:6px 10px;border-radius:20px;font-size:14px;background:#fff;border:1px solid var(--ac);color:var(--tx);font-weight:700}
+.who button{border:0;background:var(--hl);color:#a86c18;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+.fchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.fchips span{padding:4px 12px;border-radius:16px;background:var(--sub);font-size:13px;cursor:pointer}.fchips span.on{background:var(--ac);color:#fff;font-weight:700}
+table.rank td{padding:8px 4px;cursor:pointer}table.rank td.md{width:30px;text-align:center;font-size:18px}table.rank tr.on td{background:var(--hl)}table.rank .sbar{min-width:110px}
+</style></head><body>
 <header><h1>命 나의 사주 운세</h1><div id="me"></div></header>
+<div id="who" class="who"></div>
 <nav><div><button data-t="today" onclick="tab('today')">오늘</button><button data-t="ny" onclick="tab('ny')">신년운세</button><button data-t="chart" onclick="tab('chart')">원국</button><button data-t="pr" onclick="tab('pr')">종합풀이</button><button data-t="luck" onclick="tab('luck')">대운·세운</button><button data-t="cal" onclick="tab('cal')">달력</button><button data-t="gh" onclick="tab('gh')">궁합</button><button data-t="set" onclick="tab('set')">설정</button></div></nav>
 <main><section id="today"></section><section id="ny" hidden></section><section id="chart" hidden></section><section id="pr" hidden></section><section id="luck" hidden></section><section id="cal" hidden></section><section id="gh" hidden></section><section id="set" hidden></section></main>
 <div id="modal" hidden onclick="if(event.target.id==='modal')closeM()"><div class="sheet"><button class="x" onclick="closeM()">✕</button><div id="mbody"></div></div></div>
@@ -348,8 +353,8 @@ function renderChart(){
   const ga=ANIMAL_LIST[S.yp.b];
   const D=DM_DESC[dm];
   $('#chart').innerHTML=`
-  <div class="card"><div class="muted">${CFG.y}년 ${CFG.m}월 ${CFG.d}일 ${CFG.unknownTime?'시간 모름':`${CFG.hh}시 ${String(CFG.mm).padStart(2,'0')}분`} (양력) · ${CFG.male?'남':'여'} · ${CFG.place}
-   ${CFG.useSolar&&!CFG.unknownTime?`<br>경도 ${CFG.lon}° 보정 ${S.corr.toFixed(0)}분 → 진태양시 ${Math.floor(S.solarTime.h)}:${String(Math.round((S.solarTime.h%1)*60)).padStart(2,'0')}`:''} · ${STEMS_K[S.yp.s]}${BRS_K[S.yp.b]}년 ${ga}띠</div>
+  <div class="card"><div class="muted">${AC!==CFG?`<b>${AC.uname}</b> · `:''}${AC.y}년 ${AC.m}월 ${AC.d}일 ${AC.unknownTime?'시간 모름':`${AC.hh}시 ${String(AC.mm).padStart(2,'0')}분`} (양력) · ${AC.male?'남':'여'} · ${AC.place}
+   ${AC.useSolar&&!AC.unknownTime?`<br>경도 ${AC.lon}° 보정 ${S.corr.toFixed(0)}분 → 진태양시 ${Math.floor(S.solarTime.h)}:${String(Math.round((S.solarTime.h%1)*60)).padStart(2,'0')}`:''} · ${STEMS_K[S.yp.s]}${BRS_K[S.yp.b]}년 ${ga}띠</div>
    <div class="wonguk">${cols.map(([n,p],i)=>`<div><div class="cn">${n}</div>${cell(p,i===1,n)}</div>`).join('')}</div>
    <div class="legend muted">위: 천간 십성 · 아래: 지지 십성 / 지장간 / 12운성(일간 기준)</div></div>
   <div class="card" data-d="dm"><h4>나의 일간 — ${D[0]}, ${D[1]}</h4><p>${D[2]}</p></div>
@@ -678,7 +683,7 @@ function renderGH(){
     const lvl=G.total>=80?(P.rel==='연인'||!P.rel?'천생연분':'최고의 파트너'):G.total>=65?'좋은 궁합':G.total>=50?'노력하면 좋은 궁합':'서로 이해가 많이 필요한 궁합';
     const bar=(n,v,m)=>`<div class="bar"><span>${n}</span><div class="track"><div style="width:${v/m*100}%;background:var(--ac)"></div></div><b>${v}/${m}</b></div>`;
     res=`<div class="card hero"><div class="ghtop"><div class="ring" style="--v:${G.total}"><b>${G.total}</b></div><div><h3 style="margin:0">${lvl}</h3><div class="muted">나 ${STEMS[S.dp.s]}${BRS[S.dp.b]}일주 × ${P.name} ${STEMS[S2.dp.s]}${BRS[S2.dp.b]}일주</div></div></div>
-      <div class="pair">${miniChart(S,'나')}${miniChart(S2,P.name)}</div>
+      <div class="pair">${miniChart(S,subjName())}${miniChart(S2,P.name)}</div>
       ${bar('일간',G.s1,30)}${bar('배우자궁',G.r2.sc,25)}${bar('띠',G.r3.sc,15)}${bar('오행 보완',G.s4,30)}</div>
      <div class="card"><h4>1. 일간 궁합 — 성격·가치관</h4><p>나 <b>${STEMS[S.dp.s]}${EL_K[stemEl(S.dp.s)]}</b> × ${P.name} <b>${STEMS[S2.dp.s]}${EL_K[stemEl(S2.dp.s)]}</b>: ${G.t1}</p>
       <div class="dbox"><h5>나에게 ${P.name}은(는) ${tgLine(G.tgMe)}</h5><p>${GH_TG[G.tgMe]}</p></div>
@@ -734,7 +739,7 @@ function renderNY(){
   const dwi=S.daewoon.findIndex((d,i)=>nyYear>=d.startYear&&(i===9||nyYear<S.daewoon[i+1].startYear)); const D=dwi>=0?S.daewoon[dwi]:null;
   const rels=relList(p,nyYear+'년'); const hits=sinsalHits(p.b); const sj=samjae(S.yp.b,p.b);
   // 분야 점수
-  const love=CFG.male?['편재','정재']:['편관','정관'];
+  const love=AC.male?['편재','정재']:['편관','정관'];
   const area=k=>{ let v=sc.score; [[st,1],[bt,1.2]].forEach(([t,w])=>{ let a=(AREA_W[k][t]||0); if(k==='애정'&&love.includes(t)) a=1.5; v+=a*w*7; });
     if(k==='애정'){ if(p.b===SS.dohwa) v+=6; const r=brRel(p.b,S.dp.b); if(r.includes('육합')) v+=8; if(r.includes('충')) v-=10; }
     if(k==='건강'){ v+=Y.w[BR_EL[p.b]]*3; if(brRel(p.b,S.dp.b).includes('충')) v-=6; }
@@ -793,15 +798,15 @@ function renderPR(){
   else s4=`<p>재성이 ${g.jae>=2?'충분히':'적당히'} 있어 재물 감각이 있습니다. ${weak?'일간을 돕는 운(비겁·인성)이 올 때 재물을 감당하는 힘이 커집니다.':'신강하여 재물을 감당하는 힘이 있으니 적극적으로 기회를 잡아도 좋습니다.'}</p>`;
   if(g.sik>0&&g.jae>0) s4+=`<p>식상이 재성을 생하니 <b>기술·콘텐츠·강의 등 자기 재능을 통한 수입</b>이 가장 안정적입니다.</p>`;
   // 배우자
-  const spouse=CFG.male?['편재','정재']:['편관','정관']; const spN=spouse.reduce((n,t)=>n+c[t],0);
+  const spouse=AC.male?['편재','정재']:['편관','정관']; const spN=spouse.reduce((n,t)=>n+c[t],0);
   const dbT=tenGod(dm,S.dp.b,true); const dbR=[S.yp,S.mp,S.hp].filter(Boolean).flatMap(p=>brRel(S.dp.b,p.b));
   let s5=`<p>배우자 자리(일지)에 <b>${BRS[S.dp.b]}(${tgLine(dbT)})</b>이 있습니다. ${{'편재':'활동적이고 현실 감각 있는 배우자','정재':'알뜰하고 성실한 배우자','정관':'반듯하고 믿음직한 배우자','편관':'강단 있고 카리스마 있는 배우자','식신':'온화하고 여유 있는 배우자','상관':'재치 있고 표현력 좋은 배우자','정인':'자상하고 배려 깊은 배우자','편인':'독특하고 생각이 깊은 배우자','비견':'친구 같은 대등한 배우자','겁재':'활달하고 주관이 강한 배우자'}[dbT]}의 인연으로 봅니다.</p>
-   <p>${CFG.male?'남성에게 배우자성인 재성':'여성에게 배우자성인 관성'}이 원국에 ${spN>0?`<b>${spN>=2?'뚜렷하게':'적당히'}</b> 있습니다.`:'드러나지 않아 운에서 들어올 때 인연이 맺어지기 쉽습니다.'}</p>`;
+   <p>${AC.male?'남성에게 배우자성인 재성':'여성에게 배우자성인 관성'}이 원국에 ${spN>0?`<b>${spN>=2?'뚜렷하게':'적당히'}</b> 있습니다.`:'드러나지 않아 운에서 들어올 때 인연이 맺어지기 쉽습니다.'}</p>`;
   if(dbR.includes('충')) s5+=`<p>배우자 자리가 다른 글자와 <b>충</b>을 이루어, 부부가 각자 활동적이거나 떨어져 지내는 시간이 생기기 쉽습니다. 서로의 영역을 존중하는 관계가 오래갑니다.</p>`;
   if(dbR.includes('육합')) s5+=`<p>배우자 자리에 <b>합</b>이 있어 인연이 끈끈하게 묶이는 힘이 있습니다.</p>`;
   // 자녀
-  const child=CFG.male?['편관','정관']:['식신','상관']; const chN=child.reduce((n,t)=>n+c[t],0);
-  let s6=S.hp?`<p>자녀 자리(시주)에 <b>${ps(S.hp)}</b> — 천간 ${tgLine(tenGod(dm,S.hp.s))}, 지지 ${tgLine(tenGod(dm,S.hp.b,true))}이 있습니다. ${CFG.male?'남성의 자녀성인 관성':'여성의 자녀성인 식상'}은 원국에 ${chN>0?'있어':'드러나지 않아'} ${chN>0?'자녀와의 인연이 분명합니다.':'운에서 들어올 때 자녀운이 열립니다.'}</p><p>시주는 말년과 인생의 결실이기도 합니다. ${TG_LONG[tenGod(dm,S.hp.s)].g}의 기운으로 말년을 맞습니다.</p>`:'<p class="muted">태어난 시간을 몰라 자녀궁은 생략합니다.</p>';
+  const child=AC.male?['편관','정관']:['식신','상관']; const chN=child.reduce((n,t)=>n+c[t],0);
+  let s6=S.hp?`<p>자녀 자리(시주)에 <b>${ps(S.hp)}</b> — 천간 ${tgLine(tenGod(dm,S.hp.s))}, 지지 ${tgLine(tenGod(dm,S.hp.b,true))}이 있습니다. ${AC.male?'남성의 자녀성인 관성':'여성의 자녀성인 식상'}은 원국에 ${chN>0?'있어':'드러나지 않아'} ${chN>0?'자녀와의 인연이 분명합니다.':'운에서 들어올 때 자녀운이 열립니다.'}</p><p>시주는 말년과 인생의 결실이기도 합니다. ${TG_LONG[tenGod(dm,S.hp.s)].g}의 기운으로 말년을 맞습니다.</p>`:'<p class="muted">태어난 시간을 몰라 자녀궁은 생략합니다.</p>';
   // 건강
   const lack=el.map((v,i)=>v===0?i:null).filter(x=>x!==null), many=el.map((v,i)=>v>=3?i:null).filter(x=>x!==null);
   let s7=`<p>명리에서는 오행의 치우침을 몸의 약한 고리로 상징적으로 해석합니다(의학적 진단이 아닙니다).</p><ul>${many.map(i=>`<li>${EL_K[i]} 과다 — ${EL_INFO[i][1]} 쪽을 무리하지 않도록.</li>`).join('')}${lack.map(i=>`<li>${EL_K[i]} 부족 — ${EL_INFO[i][1]} 계통을 평소에 챙기면 좋습니다.</li>`).join('')}</ul>`;
@@ -813,7 +818,7 @@ function renderPR(){
   // 개운
   const L=EL_LUCK[Y.y];
   let s9=`<ul><li>색: ${L[0]}</li><li>방향: ${L[1]} — 이사·사무실·여행지 선택 시 참고</li><li>숫자: ${L[2]}</li><li>음식: ${L[3]}</li><li>${Y.y===1?'햇볕을 쬐고, 따뜻한 환경에서 일하며, 열정적인 사람과 어울리는 것이 개운입니다.':Y.y===4?'물가 산책, 충분한 수면, 차분히 사색하는 시간이 개운입니다.':Y.y===2?'규칙적인 생활과 신뢰를 쌓는 꾸준함이 개운입니다.':Y.y===0?'새로운 배움과 계획, 숲·나무와 가까이하는 것이 개운입니다.':'정리정돈과 결단, 원칙을 지키는 생활이 개운입니다.'}</li></ul>`;
-  $('#pr').innerHTML=`<div class="card hero"><h3 style="margin:0 0 4px;font-family:'Noto Serif KR',serif">정통사주 종합풀이</h3><div class="muted">${ps(S.yp)} ${ps(S.mp)} ${ps(S.dp)} ${S.hp?ps(S.hp):''} · ${CFG.male?'건명(남)':'곤명(여)'} · 자평진전 격국 + 궁통보감 조후 + 적천수 억부</div></div>
+  $('#pr').innerHTML=`<div class="card hero"><h3 style="margin:0 0 4px;font-family:'Noto Serif KR',serif">정통사주 종합풀이</h3><div class="muted">${ps(S.yp)} ${ps(S.mp)} ${ps(S.dp)} ${S.hp?ps(S.hp):''} · ${AC!==CFG?AC.uname+' · ':''}${AC.male?'건명(남)':'곤명(여)'} · 자평진전 격국 + 궁통보감 조후 + 적천수 억부</div></div>
    ${sec('一. 총론',s1)}${sec('二. 성격과 기질',s2)}${sec('三. 적성과 직업',s3)}${sec('四. 재물운',s4)}${sec('五. 배우자운',s5)}${sec('六. 자녀운과 말년',s6)}${sec('七. 건강',s7)}${sec('八. 대운의 흐름',s8)}${sec('九. 개운법',s9)}
    <p class="muted" style="text-align:center">규칙 기반 자동 풀이입니다. 재미와 자기 성찰의 참고로 보세요.</p>`;
 }
@@ -861,13 +866,13 @@ function typeRel(a,b){ const i=TYPE_ORDER.indexOf(a), j=TYPE_ORDER.indexOf(b);
 function crossRels(S1,S2,n2){ const P1=[['년',S1.yp],['월',S1.mp],['일',S1.dp],['시',S1.hp]].filter(x=>x[1]), P2=[['년',S2.yp],['월',S2.mp],['일',S2.dp],['시',S2.hp]].filter(x=>x[1]);
   const good=[],bad=[];
   P1.forEach(([a,p])=>P2.forEach(([b,q])=>{ const sr=stemRel(p.s,q.s);
-    if(sr==='합') good.push(`나의 ${a}간 ${STEMS[p.s]} ↔ ${n2}의 ${b}간 ${STEMS[q.s]}: 천간합`); if(sr==='충') bad.push(`나의 ${a}간 ${STEMS[p.s]} ↔ ${n2}의 ${b}간 ${STEMS[q.s]}: 천간충`);
+    if(sr==='합') good.push(`${subjName()}의 ${a}간 ${STEMS[p.s]} ↔ ${n2}의 ${b}간 ${STEMS[q.s]}: 천간합`); if(sr==='충') bad.push(`${subjName()}의 ${a}간 ${STEMS[p.s]} ↔ ${n2}의 ${b}간 ${STEMS[q.s]}: 천간충`);
     const r=brRel(p.b,q.b);
-    if(r.includes('육합')) good.push(`나의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 육합`);
-    if(r.includes('반합')) good.push(`나의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 삼합(반합)`);
-    if(r.includes('충')) bad.push(`나의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 충`);
-    if(r.includes('형')) bad.push(`나의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 형`);
-    if(isWonjin(p.b,q.b)) bad.push(`나의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 원진`); }));
+    if(r.includes('육합')) good.push(`${subjName()}의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 육합`);
+    if(r.includes('반합')) good.push(`${subjName()}의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 삼합(반합)`);
+    if(r.includes('충')) bad.push(`${subjName()}의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 충`);
+    if(r.includes('형')) bad.push(`${subjName()}의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 형`);
+    if(isWonjin(p.b,q.b)) bad.push(`${subjName()}의 ${a}지 ${BRS[p.b]} ↔ ${n2}의 ${b}지 ${BRS[q.b]}: 원진`); }));
   return {good,bad}; }
 function yearFlow(S1,Y1,S2,Y2){ const cy=new Date().getFullYear(), out=[];
   for(let y=cy;y<cy+6;y++){ const p=p60(mod(y-4,60)); let v=(pillarScore(p,Y1,S1).score+pillarScore(p,Y2,S2).score)/2; const n=[];
@@ -914,21 +919,21 @@ function renderGH(){
       const p2=G.r2.sc>=G.wDay*0.8?(rk==='연인'?'함께 생활할 때 편안하며':'속마음이 잘 통하며'):G.r2.sc<=G.wDay*0.3?(rk==='연인'?'생활 방식은 조율이 필요하고':'속마음을 맞추는 데 시간이 걸리고'):(rk==='연인'?'생활 궁합은 무난하며':'함께 있는 분위기는 무난하며');
       const gm=G.giveMe+G.giveThem, p3=gm>0.6?'오행으로는 서로에게 부족한 기운을 채워 주는 관계입니다.':gm<-0.4?'오행으로는 서로 꺼리는 기운을 건드리기 쉬운 관계입니다.':'오행으로는 큰 치우침 없이 무난한 관계입니다.';
       return `${p1}, ${p2}, ${p3} ${G.total>=70?'함께할수록 서로에게 좋은 영향을 주는 사이예요.':G.total>=50?'장점이 분명한 만큼, 부딪히는 지점만 미리 알고 조율하면 충분히 좋은 관계가 됩니다.':'다름이 큰 만큼 서로의 방식을 존중하는 노력이 관계의 열쇠입니다.'}`; })();
-    res=`<div class="card hero"><div class="ghtop"><div class="ring" style="--v:${G.total}"><b>${G.total}</b></div><div><h3 style="margin:0">${lvl}</h3><div class="muted">나 ${STEMS[S.dp.s]}${BRS[S.dp.b]}일주 × ${nm} ${STEMS[S2.dp.s]}${BRS[S2.dp.b]}일주</div>
+    res=`<div class="card hero"><div class="ghtop"><div class="ring" style="--v:${G.total}"><b>${G.total}</b></div><div><h3 style="margin:0">${lvl}</h3><div class="muted">${subjName()} ${STEMS[S.dp.s]}${BRS[S.dp.b]}일주 × ${nm} ${STEMS[S2.dp.s]}${BRS[S2.dp.b]}일주</div>
        <div style="margin-top:4px">관계 <select class="relsel" onchange="setRel('${P.id}',this.value)">${['친구','연인','직장동료','기타'].map(r=>`<option ${r===(P.rel||'')?'selected':''}>${r}</option>`).join('')}${P.rel?'':'<option selected value="">선택</option>'}</select></div></div></div>
       <p class="lead">${summary}</p>
-      <div class="pair">${miniChart(S,'나')}${miniChart(S2,nm)}</div>
+      <div class="pair">${miniChart(S,subjName())}${miniChart(S2,nm)}</div>
       ${bar('성격(일간)',G.s1,30)}${bar(rk==='연인'?'배우자궁':'속마음(일지)',G.r2.sc,G.wDay)}${bar('띠',G.r3.sc,G.wYear)}${bar('오행 보완',G.s4,G.wEl)}
       <p class="muted" style="margin-top:6px">사주 전체 글자에서 합 ${G.X.good.length}개 · 충/형/원진 ${G.X.bad.length}개를 함께 반영했습니다.</p></div>
 
      <div class="card"><h4>💫 두 사람의 기질</h4>
-      <div class="vs"><div><small>나</small><b>${dmA[0]}</b><span>${dmA[1]}</span><em>${TYPE_NAME[t1]}</em></div><div class="x">×</div><div><small>${nm}</small><b>${dmB[0]}</b><span>${dmB[1]}</span><em>${TYPE_NAME[t2]}</em></div></div>
-      <p>나는 <b>${TYPE_DESC[t1]}</b>, ${nm}은(는) <b>${TYPE_DESC[t2]}</b>입니다. ${typeRel(t1,t2)}</p>
+      <div class="vs"><div><small>${subjName()}</small><b>${dmA[0]}</b><span>${dmA[1]}</span><em>${TYPE_NAME[t1]}</em></div><div class="x">×</div><div><small>${nm}</small><b>${dmB[0]}</b><span>${dmB[1]}</span><em>${TYPE_NAME[t2]}</em></div></div>
+      <p>${topic(subjName())} <b>${TYPE_DESC[t1]}</b>, ${nm}은(는) <b>${TYPE_DESC[t2]}</b>입니다. ${typeRel(t1,t2)}</p>
       <div class="dbox"><h5>일간 관계</h5><p>${G.t1}</p></div></div>
 
      <div class="card"><h4>🔗 서로에게 어떤 존재인가</h4>
-      <div class="dbox"><h5>나에게 ${nm}은(는) ${tgLine(G.tgMe)}</h5><p>${REL_TG[rk][G.tgMe]}</p></div>
-      <div class="dbox"><h5>${nm}에게 나는 ${tgLine(G.tgThem)}</h5><p>${REL_TG[rk][G.tgThem]}</p></div></div>
+      <div class="dbox"><h5>${subjName()}에게 ${nm}은(는) ${tgLine(G.tgMe)}</h5><p>${REL_TG[rk][G.tgMe]}</p></div>
+      <div class="dbox"><h5>${nm}에게 ${topic(subjName())} ${tgLine(G.tgThem)}</h5><p>${REL_TG[rk][G.tgThem]}</p></div></div>
 
      <div class="card"><h4>💞 ${rk==='연인'?'배우자궁 — 생활·속마음':'일지 — 속마음·편안함'}</h4><p>${BRS[S.dp.b]}(${BRS_K[S.dp.b]}) × ${BRS[S2.dp.b]}(${BRS_K[S2.dp.b]})</p><ul>${G.r2.lines.map(l=>`<li>${l}</li>`).join('')}</ul>
       <p class="muted">${rk==='연인'?'일지는 배우자 자리이자 가장 사적인 속마음의 자리라, 함께 살 때의 편안함을 봅니다.':'일지는 가장 사적인 속마음의 자리라, 함께 있을 때 편한지를 봅니다.'}</p></div>
@@ -936,10 +941,10 @@ function renderGH(){
      <div class="card"><h4>🐾 띠 궁합</h4><p>${ANIMAL_LIST[S.yp.b]}띠 × ${ANIMAL_LIST[S2.yp.b]}띠</p><ul>${G.r3.lines.map(l=>`<li>${l}</li>`).join('')}</ul></div>
 
      <div class="card"><h4>🌗 오행 비교</h4>
-      <div class="elcmp">${[0,1,2,3,4].map(e=>`<div class="er"><span style="color:${EL_COLOR[e]}">${EL_H[e]}</span><div class="l"><div style="width:${G.c1[e]*12.5}%;background:${EL_COLOR[e]}"></div></div><b>${G.c1[e]}</b><b>${G.c2[e]}</b><div class="r"><div style="width:${G.c2[e]*12.5}%;background:${EL_COLOR[e]}"></div></div></div>`).join('')}<div class="er lbl"><span></span><small>나</small><b></b><b></b><small style="text-align:right">${nm}</small></div></div>
-      <p>${nm}의 사주는 나에게 ${G.giveMe>0.3?`<b>필요한 기운(용신 ${EL_K[Y.y]})을 많이 채워 줍니다</b>`:G.giveMe<-0.3?`<b>내가 꺼리는 기운(기신 ${EL_K[Y.gi]})이 많은 편</b>입니다`:'보통 정도의 도움을 줍니다'}.</p>
-      <p>나의 사주는 ${nm}에게 ${G.giveThem>0.3?`<b>필요한 기운(용신 ${EL_K[Y2.y]})을 채워 줍니다</b>`:G.giveThem<-0.3?`<b>꺼리는 기운(기신 ${EL_K[Y2.gi]})이 많은 편</b>입니다`:'보통 정도의 도움을 줍니다'}.</p>
-      ${[0,1,2,3,4].filter(e=>G.c1[e]===0&&G.c2[e]>0).map(e=>`<p class="muted">· 나에게 없는 ${EL_K[e]}를 ${nm}이(가) 가지고 있어요.</p>`).join('')}${[0,1,2,3,4].filter(e=>G.c2[e]===0&&G.c1[e]>0).map(e=>`<p class="muted">· ${nm}에게 없는 ${EL_K[e]}를 내가 가지고 있어요.</p>`).join('')}</div>
+      <div class="elcmp">${[0,1,2,3,4].map(e=>`<div class="er"><span style="color:${EL_COLOR[e]}">${EL_H[e]}</span><div class="l"><div style="width:${G.c1[e]*12.5}%;background:${EL_COLOR[e]}"></div></div><b>${G.c1[e]}</b><b>${G.c2[e]}</b><div class="r"><div style="width:${G.c2[e]*12.5}%;background:${EL_COLOR[e]}"></div></div></div>`).join('')}<div class="er lbl"><span></span><small>${subjName()}</small><b></b><b></b><small style="text-align:right">${nm}</small></div></div>
+      <p>${nm}의 사주는 ${subjName()}에게 ${G.giveMe>0.3?`<b>필요한 기운(용신 ${EL_K[Y.y]})을 많이 채워 줍니다</b>`:G.giveMe<-0.3?`<b>내가 꺼리는 기운(기신 ${EL_K[Y.gi]})이 많은 편</b>입니다`:'보통 정도의 도움을 줍니다'}.</p>
+      <p>${subjName()}의 사주는 ${nm}에게 ${G.giveThem>0.3?`<b>필요한 기운(용신 ${EL_K[Y2.y]})을 채워 줍니다</b>`:G.giveThem<-0.3?`<b>꺼리는 기운(기신 ${EL_K[Y2.gi]})이 많은 편</b>입니다`:'보통 정도의 도움을 줍니다'}.</p>
+      ${[0,1,2,3,4].filter(e=>G.c1[e]===0&&G.c2[e]>0).map(e=>`<p class="muted">· ${subjName()}에게 없는 ${EL_K[e]}를 ${nm}이(가) 가지고 있어요.</p>`).join('')}${[0,1,2,3,4].filter(e=>G.c2[e]===0&&G.c1[e]>0).map(e=>`<p class="muted">· ${nm}에게 없는 ${EL_K[e]}를 ${subjName()==='나'?'내가':subjName()+'이(가)'} 가지고 있어요.</p>`).join('')}</div>
 
      <div class="card"><h4>🧩 사주 전체 글자의 합·충</h4>
       ${G.X.good.length?`<div class="dbox gd"><h5>끌어당기는 인연 (${G.X.good.length})</h5><ul>${G.X.good.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:''}
@@ -959,10 +964,48 @@ function renderGH(){
       <table>${flow.map(f=>`<tr><td>${f.y}</td><td>${ps(f.p)}</td><td><div class="sbar"><div style="width:${f.v}%"></div><span>${f.v}</span></div></td><td class="muted nt">${f.n.join(', ')}</td></tr>`).join('')}</table>
       <p>두 사람에게 가장 좋은 해는 <b>${[...flow].sort((a,b)=>b.v-a.v)[0].y}년</b>${rk==='연인'?' — 관계를 한 단계 발전시키기 좋은 해입니다.':' — 함께 무언가를 시작하기 좋은 해입니다.'}</p></div>
 
-     <div class="card"><h4>💌 한 줄 조언</h4><p class="lead">${G.total>=70?`서로가 서로의 행운입니다. ${nm}에게 고맙다는 말을 자주 해 주세요.`:G.total>=50?`다름을 '틀림'으로 보지 않는 것. ${TYPE_NAME[t1]}인 나와 ${TYPE_NAME[t2]}인 ${nm}은(는) 역할을 나누면 최고의 팀이 됩니다.`:`속도를 맞추는 게 먼저예요. 서로의 방식을 먼저 물어보면 오해의 절반이 사라집니다.`}</p></div>
+     <div class="card"><h4>💌 한 줄 조언</h4><p class="lead">${G.total>=70?`서로가 서로의 행운입니다. ${nm}에게 고맙다는 말을 자주 해 주세요.`:G.total>=50?`다름을 '틀림'으로 보지 않는 것. ${TYPE_NAME[t1]}인 ${subjName()}와(과) ${TYPE_NAME[t2]}인 ${nm}은(는) 역할을 나누면 최고의 팀이 됩니다.`:`속도를 맞추는 게 먼저예요. 서로의 방식을 먼저 물어보면 오해의 절반이 사라집니다.`}</p></div>
      <div class="card"><button class="del" onclick="ghDel('${P.id}')">이 사람 삭제</button></div>`; }
   $('#gh').innerHTML=`<div class="card"><h4>궁합 볼 사람</h4><div class="plist">${list||'<span class="muted">아직 저장된 사람이 없어요.</span>'}<span class="pchip add" onclick="ghForm()">＋ 추가</span></div><div id="ghf"></div></div>${res}`;
   if(!PEOPLE.length) ghForm(); }
+
+// ===== 여러 사람 보기 =====
+let VIEW=null; try{ VIEW=localStorage.getItem('saju_view')||null; }catch(e){}
+let AC=null, ghFilter='전체';
+function personCfg(p){ return {y:p.y,m:p.m,d:p.d,hh:p.hh,mm:p.mm,male:p.male,lon:p.lon??127,tz:p.tz??null,dst:!!p.dst,place:p.place||'',unknownTime:!!p.unk,useSolar:CFG.useSolar,yajasi:CFG.yajasi,yongOverride:'auto',uname:p.name}; }
+function ownerPerson(){ return {id:'me',name:CFG.uname||'나(본인)',rel:'',y:CFG.y,m:CFG.m,d:CFG.d,hh:CFG.hh,mm:CFG.mm,unk:CFG.unknownTime,male:CFG.male,lon:CFG.lon,tz:CFG.tz,dst:CFG.dst,place:CFG.place}; }
+let _realPeople=null;
+function viewPerson(){ return VIEW?(_realPeople||PEOPLE).find(p=>p.id===VIEW)||null:null; }
+function subjName(){ const p=viewPerson(); return p?p.name:'나'; }
+function topic(n){ return n==='나'?'나는':n+'은(는)'; }
+function compute(){ const vp=viewPerson(); if(!vp) VIEW=null; AC=vp?personCfg(vp):CFG; S=calcSaju(AC); Y=yongsin(S,AC.yongOverride); SS=sinsal(S); }
+function setView(v){ VIEW=(v==='me'||!v)?null:v; try{ VIEW?localStorage.setItem('saju_view',VIEW):localStorage.removeItem('saju_view'); }catch(e){} ghSel=null; compute(); renderAll(); }
+function renderWho(){ const vp=viewPerson();
+  $('#who').innerHTML=`<span>👤 지금 보는 사람</span><select onchange="setView(this.value)"><option value="me" ${!vp?'selected':''}>나 (${CFG.uname||'본인'})</option>${PEOPLE.map(p=>`<option value="${p.id}" ${vp&&vp.id===p.id?'selected':''}>${p.name}${p.rel?' · '+p.rel:''}</option>`).join('')}</select>${vp?`<button onclick="setView('me')">나로 돌아가기</button>`:''}`;
+  $('#me').textContent=`${vp?vp.name+' · ':''}${ps(S.yp)} ${ps(S.mp)} ${ps(S.dp)} ${S.hp?ps(S.hp):'--'} · ${STEMS[S.dp.s]}${EL_H[stemEl(S.dp.s)]} 일간`; }
+function ghPeople(){ const vp=viewPerson(); const list=PEOPLE.filter(p=>p.id!==VIEW); if(vp){ const o=ownerPerson(); o.rel=vp.rel||''; list.unshift(o); } return list; }
+const _renderGH_base=renderGH;
+renderGH=function(){
+  const people=ghPeople(); if(ghSel&&!people.some(p=>p.id===ghSel)) ghSel=null; if(!ghSel&&people.length) ghSel=people[0].id;
+  const saved=PEOPLE; _realPeople=saved; PEOPLE=people; try{ _renderGH_base(); } finally { PEOPLE=saved; _realPeople=null; }
+  // 순위표
+  if(people.length>=1){ const ME=subjName();
+    const rows=people.map(p=>{ const g=gunghap(p); return {p,t:g.total,s1:g.s1,tg:g.tgMe}; }).sort((a,b)=>b.t-a.t);
+    const filt=rows.filter(r=>ghFilter==='전체'||(r.p.rel||'기타')===ghFilter);
+    const medal=i=>['🥇','🥈','🥉'][i]||`${i+1}`;
+    const html=`<div class="card"><h4>🏆 ${ME==='나'?'나와':ME+'와(과)'} 잘 맞는 순위</h4>
+      <div class="fchips">${['전체','연인','친구','직장동료','기타'].map(f=>`<span class="${f===ghFilter?'on':''}" onclick="ghFilter='${f}';renderGH()">${f}</span>`).join('')}</div>
+      ${filt.length?`<table class="rank">${filt.map((r,i)=>`<tr class="${r.p.id===ghSel?'on':''}" onclick="ghPick('${r.p.id}')"><td class="md">${medal(i)}</td><td><b>${r.p.name}</b>${r.p.rel?`<small> · ${r.p.rel}</small>`:''}<div class="muted" style="font-size:11px">${ME==='나'?'나에게':ME+'에게'} ${r.tg}</div></td><td><div class="sbar"><div style="width:${r.t}%"></div><span>${r.t}점</span></div></td></tr>`).join('')}</table>`:'<p class="muted">해당 관계로 저장된 사람이 없어요.</p>'}
+      <p class="muted" style="margin:6px 0 0">이름을 누르면 아래에 상세 궁합이 열립니다. 다른 사람끼리의 궁합은 맨 위 <b>"지금 보는 사람"</b>을 바꾸면 볼 수 있어요.</p></div>`;
+    const first=$('#gh .card'); first.insertAdjacentHTML('afterend',html); }
+  if(ghSel==='me'){ const d=$('#gh .del'); if(d) d.parentNode.remove(); }
+};
+const _ghDel_base=ghDel;
+ghDel=function(id){ if(id==='me') return; if(id===VIEW) setView('me'); _ghDel_base(id); renderWho(); };
+const _ghAdd_base=ghAdd;
+ghAdd=function(e){ _ghAdd_base(e); renderWho(); };
+const _renderAll_base=renderAll;
+renderAll=function(){ _renderAll_base(); renderWho(); };
 
 compute(); renderAll(); setTimeout(shareExisting,1500);
 if(FIRST) tab('set'); else tab(['today','ny','chart','pr','luck','cal','gh','set'].includes(location.hash.slice(1))?location.hash.slice(1):'today');
