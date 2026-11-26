@@ -28,6 +28,7 @@ h4{margin:0 0 8px;font-size:15px}p{margin:6px 0}.muted{color:var(--mu);font-size
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid2 .card{margin:0}@media(max-width:560px){.grid2{grid-template-columns:1fr}}
 .grid2+.card{margin-top:12px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.tags span{background:var(--sub2);border:1px solid var(--line);border-radius:20px;padding:3px 10px;font-size:13px}
+.lc2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lc2 div{background:var(--sub);border-radius:10px;padding:10px;font-size:13px}.lc2 small{display:block;color:var(--mu);font-size:11px;margin-bottom:4px}.lc2 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 .luck{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.luck div{background:var(--sub);border-radius:10px;padding:8px;text-align:center;font-size:13px}.luck small{display:block;color:var(--mu);font-size:11px}
 @media(max-width:560px){.luck{grid-template-columns:1fr 1fr}}
 .wonguk{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px;text-align:center}.cn{font-size:12px;color:var(--mu);margin-bottom:4px}
@@ -300,6 +301,17 @@ function dayFortune(date){
   const d=pillarScore(P.dp,Y,S), mo=pillarScore(P.mp,Y,S);
   const score=Math.round(d.score*0.8+mo.score*0.2);
   return {P,sTG,bTG,score,notes:d.notes}; }
+// ===== 행운색 2단계: 기본(용신, 고정) + 오늘의 보조색(일진 따라 변동) =====
+function luckColor(P){
+  const base=Y.y, se=stemEl(P.dp.s), be=BR_EL[P.dp.b], K=EL_K;
+  const good=[se,be].filter(e=>Y.w[e]>0&&e!==base).sort((a,b)=>Y.w[b]-Y.w[a]);
+  if(good.length) return {base,aux:good[0],why:`오늘 일진에 ${K[good[0]]} 기운이 들어와 용신을 돕는 날이라 ${K[good[0]]} 색을 보조로 씁니다.`};
+  if([se,be].includes(base)) return {base,aux:base,why:`오늘 일진 자체가 용신 ${K[base]} 기운이라 기본색을 진하게, 포인트로 한 번 더 쓰면 좋은 날입니다.`};
+  const bad=Y.w[se]<=Y.w[be]?se:be, ctl=mod(bad+3,5), tong=mod(bad+1,5);
+  const aux=Y.w[ctl]>0?ctl:Y.w[tong]>0?tong:((Y.hee!=null)?Y.hee:base);
+  return {base,aux,why:`오늘은 ${K[bad]} 기운이 강하게 들어와요. ${aux===ctl?`${K[bad]+((K[bad].charCodeAt(0)-44032)%28?'을':'를')} 눌러 주는 ${K[aux]}`:aux===tong?`${K[bad]+((K[bad].charCodeAt(0)-44032)%28?'을':'를')} 흘려보내는 ${K[aux]}`:K[aux]} 색으로 균형을 잡아 주세요.`};
+}
+const ACT_TXT={비견:['혼자 결정하기 전에 한 번 더 확인하기','경쟁보다 협력 제안하기'],겁재:['돈거래·보증은 오늘 미루기','충동 결제 전 하루 기다리기'],식신:['미뤄 둔 작업 하나 끝내기','아이디어를 메모로 남기기'],상관:['말하기 전에 3초 멈추기','윗사람과의 논쟁 피하기'],편재:['투자는 정해 둔 한도 안에서만','새 기회는 숫자로 검토하기'],정재:['가계부·지출 정리하기','작은 약속도 꼭 지키기'],편관:['무리한 일정 줄이기','규칙과 마감 먼저 챙기기'],정관:['공식 문서·계약 꼼꼼히 확인하기','신뢰를 쌓는 보고·연락하기'],편인:['새로운 공부나 자료 조사하기','생각이 많아지면 산책하기'],정인:['도움 받은 사람에게 연락하기','책 한 챕터 읽기']};
 function stars(score){ const n=Math.max(1,Math.min(5,Math.round(score/20))); return '★'.repeat(n)+'☆'.repeat(5-n); }
 function renderToday(){
   const F=dayFortune(viewDate), P=F.P, dm=S.dp.s;
@@ -310,7 +322,7 @@ function renderToday(){
   const tags=[];
   if(P.dp.b===SS.dohwa) tags.push('도화(인기·매력)'); if(P.dp.b===SS.yeokma) tags.push('역마(이동·출장)'); if(P.dp.b===SS.hwagae) tags.push('화개(사색·예술)');
   if(SS.gw.includes(P.dp.b)) tags.push('천을귀인(귀인의 도움)'); if(SS.gong.includes(P.dp.b)) tags.push('공망(헛수고 주의)');
-  const L=EL_LUCK[Y.y];
+  const L=EL_LUCK[Y.y], LC=luckColor(P), ACTS=[...new Set([...(ACT_TXT[F.sTG]||[]),...(ACT_TXT[F.bTG]||[])])].slice(0,3);
   const isToday=fmtDate(viewDate)===fmtDate(new Date());
   $('#today').innerHTML=`
   <div class="datebar"><button onclick="shiftDay(-1)">‹</button><div><b>${fmtDate(viewDate)} (${WEEK[viewDate.getDay()]})</b>${isToday?'<span class="badge">오늘</span>':`<button class="link" onclick="goToday()">오늘로</button>`}</div><button onclick="shiftDay(1)">›</button></div>
@@ -332,7 +344,10 @@ function renderToday(){
   <div class="card"><h4>오늘의 작용</h4>${rels.length?'<ul>'+rels.map(r=>`<li>${r}</li>`).join('')+'</ul>':'<p class="muted">원국과 특별한 합·충이 없는 평이한 날입니다.</p>'}
   ${tags.length?`<div class="tags">${tags.map(t=>`<span data-d="ss:${t.split('(')[0]}">${t}</span>`).join('')}</div>`:''}</div>
   <div class="card"><h4 data-d="el:${Y.y}">🍀 행운 포인트 <small class="muted">(용신 ${EL_K[Y.y]} 기준)</small></h4>
-   <div class="luck"><div><small>색</small>${L[0]}</div><div><small>방향</small>${L[1]}</div><div><small>숫자</small>${L[2]}</div><div><small>음식</small>${L[3]}</div></div></div>`;
+   <div class="lc2"><div><small>기본 행운색 (고정)</small><span class="dot" style="background:${EL_COLOR[LC.base]}"></span><b>${EL_LUCK[LC.base][0]}</b></div><div><small>오늘의 보조색</small><span class="dot" style="background:${EL_COLOR[LC.aux]}"></span><b>${EL_LUCK[LC.aux][0]}</b></div></div>
+   <p class="muted" style="font-size:12px;margin:6px 0 10px">${LC.why}</p>
+   <div class="luck"><div><small>방향</small>${L[1]}</div><div><small>숫자</small>${L[2]}</div><div><small>음식</small>${L[3]}</div><div><small>보조 방향</small>${EL_LUCK[LC.aux][1]}</div></div></div>
+  <div class="card"><h4>✅ 오늘의 실천</h4><ul>${ACTS.map(a=>`<li>${a}</li>`).join('')}</ul><p class="muted" style="font-size:12px">색은 기분 전환용, 진짜 개운은 행동이에요.</p></div>`;
 }
 function shiftDay(n){ viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth(),viewDate.getDate()+n); renderToday(); }
 function goToday(){ viewDate=new Date(); renderToday(); }
